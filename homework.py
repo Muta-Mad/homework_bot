@@ -111,8 +111,7 @@ def main():
         filename='main.log',
     )
     if not check_tokens():
-        logging.critical('Отсутствуют необходимые токены. Остановка!')
-        return
+        return logging.critical('Отсутствуют необходимые токены. Остановка!')
     while True:
         try:
             response = get_api_answer(timestamp)
