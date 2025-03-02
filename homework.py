@@ -2,10 +2,10 @@ from http import HTTPStatus
 import time
 import os
 import logging
-import requests
 
 from telebot import TeleBot
 from dotenv import load_dotenv
+import requests
 
 load_dotenv()
 
