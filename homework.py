@@ -52,7 +52,7 @@ def send_message(bot, message):
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
         logging.debug(f'Сообщение отправлено: {message}')
     except (apihelper.ApiException, requests.RequestException) as error:
-        logging.error(f'Ошибка при отправке сообщения: {error}')
+        raise ConnectionError(f'Ошибка при отправке сообщения: {error}')
 
 
 def get_api_answer(timestamp):
@@ -65,7 +65,6 @@ def get_api_answer(timestamp):
             params={'from_date': timestamp}
         )
         if response.status_code != HTTPStatus.OK:
-            logging.debug('Ошибка при запросе к API')
             raise ValueError(
                 f'Ошибка при запросе к API статус:{response.status_code}'
             )
@@ -81,15 +80,12 @@ def check_response(response):
     """Проверяет ответ API на соответствие документации."""
     logging.info('Начинаю проверку ответа от сервера..')
     if not isinstance(response, dict):
-        logging.debug('Не ожиданный тип данных!')
-        raise type('Ответ API не является словарем')
+        raise TypeError('Ответ API не является словарем')
     if 'homeworks' not in response:
-        logging.debug('Отсутствуют ключи в ответе API')
         raise KeyError('Ожидаемых ключей не найдено!')
     homeworks = response['homeworks']
     if not isinstance(homeworks, list):
-        logging.debug('Не ожиданный тип данных!')
-        raise type('homeworks не является списком')
+        raise TypeError('homeworks не является списком')
     logging.info('Ответ API соответствует документации')
     logging.info('Проверка ответа от сервера завершена успешно!')
     return homeworks
@@ -99,23 +95,47 @@ def parse_status(homework):
     """Извлекает статус домашней работы из ответа API."""
     logging.info('Начинаю проверку статуса домашней работы..')
     if 'homework_name' not in homework:
-        not_found_homework_name = 'homework_name'
-        logging.debug('Отсутвует ожидаемый ключ')
-        raise KeyError(f'Отсутвует ожидаемый ключ:{not_found_homework_name}')
+        raise KeyError('Отсутствует ожидаемый ключ: homework_name')
     if 'status' not in homework:
-        not_found_status = 'status'
-        logging.debug('Отсутвует ожидаемый ключ')
-        raise KeyError(f'Отсутвует ожидаемый ключ:{not_found_status}')
+        raise KeyError('Отсутствует ожидаемый ключ: status')
     homework_name = homework['homework_name']
     status = homework['status']
     if status not in HOMEWORK_VERDICTS:
-        logging.debug('Неизвестный статус домашней работы')
         raise ValueError(f'Неизвестный статус домашней работы: {status}')
     verdict = HOMEWORK_VERDICTS[status]
     logging.info(f'Статус домашней работы {homework_name} изменен на {status}')
     logging.info('Проверка статуса домашней работы завершена успешно!')
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
+
+def main():
+    """Основная логика работы бота."""
+    check_tokens()
+    bot = TeleBot(token=TELEGRAM_TOKEN)
+    timestamp = int(time.time())
+    last_sent_message = None
+
+    while True:
+        try:
+            response = get_api_answer(timestamp)
+            homeworks = check_response(response)
+            if homeworks:
+                homework = homeworks[0]
+                message = parse_status(homework)
+                if message != last_sent_message:
+                    send_message(bot, message)
+                    last_sent_message = message
+            else:
+                logging.debug('Нет новых статусов домашних работ')
+            timestamp = response.get('current_date', int(time.time()))
+        except Exception as error:
+            message = f'Сбой в работе программы: {error}'
+            if message != last_sent_message:
+                logging.error(message, exc_info=True)
+                send_message(bot, message)
+                last_sent_message = message
+        finally:
+            time.sleep(RETRY_PERIOD)
 
 def main():
     """Основная логика работы бота."""
