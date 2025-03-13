@@ -80,12 +80,12 @@ def check_response(response):
     """Проверяет ответ API на соответствие документации."""
     logging.info('Начинаю проверку ответа от сервера..')
     if not isinstance(response, dict):
-        raise TypeError('Ответ API не является словарем')
+        raise type('Ответ API не является словарем')
     if 'homeworks' not in response:
         raise KeyError('Ожидаемых ключей не найдено!')
     homeworks = response['homeworks']
     if not isinstance(homeworks, list):
-        raise TypeError('homeworks не является списком')
+        raise type('homeworks не является списком')
     logging.info(
         'Ответ API соответствует документации. Проверка завершена успешно.'
     )
