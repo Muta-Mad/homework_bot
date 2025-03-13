@@ -91,7 +91,7 @@ def check_response(response):
             f'homeworks не является списком. Получен тип: {type(response)}'
         )
     logging.info(
-        'Ответ API соответствует документации. Проверка завершена успешно.'
+        'Ответ API соответствует документации.Проверка завершена успешно.'
     )
     return homeworks
 
