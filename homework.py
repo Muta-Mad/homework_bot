@@ -52,6 +52,7 @@ def send_message(bot, message):
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
         logging.debug(f'Сообщение отправлено: {message}')
     except (apihelper.ApiException, requests.RequestException) as error:
+        logging.error(f'Ошибка при отправке сообщения: {error}')
         raise ConnectionError(f'Ошибка при отправке сообщения: {error}')
 
 
@@ -86,8 +87,9 @@ def check_response(response):
     homeworks = response['homeworks']
     if not isinstance(homeworks, list):
         raise TypeError('homeworks не является списком')
-    logging.info('Ответ API соответствует документации')
-    logging.info('Проверка ответа от сервера завершена успешно!')
+    logging.info(
+        'Ответ API соответствует документации. Проверка завершена успешно.'
+    )
     return homeworks
 
 
@@ -110,36 +112,6 @@ def parse_status(homework):
 
 def main():
     """Основная логика работы бота."""
-    check_tokens()
-    bot = TeleBot(token=TELEGRAM_TOKEN)
-    timestamp = int(time.time())
-    last_sent_message = None
-
-    while True:
-        try:
-            response = get_api_answer(timestamp)
-            homeworks = check_response(response)
-            if homeworks:
-                homework = homeworks[0]
-                message = parse_status(homework)
-                if message != last_sent_message:
-                    send_message(bot, message)
-                    last_sent_message = message
-            else:
-                logging.debug('Нет новых статусов домашних работ')
-            timestamp = response.get('current_date', int(time.time()))
-        except Exception as error:
-            message = f'Сбой в работе программы: {error}'
-            if message != last_sent_message:
-                logging.error(message, exc_info=True)
-                send_message(bot, message)
-                last_sent_message = message
-        finally:
-            time.sleep(RETRY_PERIOD)
-
-def main():
-    """Основная логика работы бота."""
-    # Создаем объект класса бота
     check_tokens()
     bot = TeleBot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
