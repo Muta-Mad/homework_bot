@@ -53,7 +53,6 @@ def send_message(bot, message):
         logging.debug(f'Сообщение отправлено: {message}')
     except (apihelper.ApiException, requests.RequestException) as error:
         logging.error(f'Ошибка при отправке сообщения: {error}')
-        raise ConnectionError(f'Ошибка при отправке сообщения: {error}')
 
 
 def get_api_answer(timestamp):
