@@ -41,14 +41,16 @@ def check_tokens():
     ]
     if token_not_found:
         logging.critical(f'Токены не найдены: {", ".join(token_not_found)}')
-        sys.exit(1)
+        sys.exit(
+            f'Остановка!!1! Необходимые токены не найдены: {token_not_found}'
+        )
     logging.info('Все токены доступны')
 
 
 def send_message(bot, message):
     """Отправляет сообщение в Telegram."""
+    logging.info('Отправляю сообщение..')
     try:
-        logging.info('Отправляю сообщение..')
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
         logging.debug(f'Сообщение отправлено: {message}')
     except (apihelper.ApiException, requests.RequestException) as error:
@@ -64,16 +66,16 @@ def get_api_answer(timestamp):
             headers=HEADERS,
             params={'from_date': timestamp}
         )
-        if response.status_code != HTTPStatus.OK:
-            raise ValueError(
-                f'Ошибка при запросе к API статус:{response.status_code}'
-            )
-        logging.debug('Успешный запрос к API')
-        return response.json()
     except requests.RequestException as error:
         raise ConnectionError(
-            f'Сбой запроса к {ENDPOINT} c параметрами {timestamp}:{error}'
+            f'Сбой запроса к {ENDPOINT} c параметрами {timestamp}: {error}'
         )
+    if response.status_code != HTTPStatus.OK:
+        raise ValueError(
+            f'Ошибка при запросе к API статус: {response.status_code}'
+        )
+    logging.debug('Успешный запрос к API')
+    return response.json()
 
 
 def check_response(response):
@@ -84,11 +86,11 @@ def check_response(response):
             f'Ответ API не является словарем. Получен тип: {type(response)}'
         )
     if 'homeworks' not in response:
-        raise KeyError('Ожидаемых ключей не найдено!')
+        raise KeyError('Ожидаемый ключ "homeworks" не найден в ответе API.')
     homeworks = response['homeworks']
     if not isinstance(homeworks, list):
         raise TypeError(
-            f'homeworks не является списком. Получен тип: {type(response)}'
+            f'homeworks не является списком. Получен тип: {type(homeworks)}'
         )
     logging.info(
         'Ответ API соответствует документации.Проверка завершена успешно.'
@@ -127,16 +129,15 @@ def main():
             if homeworks:
                 homework = homeworks[0]
                 message = parse_status(homework)
-                if message != last_sent_message:
-                    send_message(bot, message)
-                    last_sent_message = message
+                send_message(bot, message)
+                last_sent_message = message
             else:
                 logging.debug('Нет новых статусов домашних работ')
             timestamp = response.get('current_date', int(time.time()))
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
+            logging.error(message, exc_info=True)
             if message != last_sent_message:
-                logging.error(message, exc_info=True)
                 send_message(bot, message)
                 last_sent_message = message
         finally:
