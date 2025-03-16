@@ -40,10 +40,12 @@ def check_tokens():
         if not token_value
     ]
     if token_not_found:
-        logging.critical(f'Токены не найдены: {", ".join(token_not_found)}')
-        sys.exit(
-            f'Остановка!!1! Необходимые токены не найдены: {token_not_found}'
+        error_massage = (
+            f'Остановка!!! токены не найдены: {", ".join(token_not_found)}'
+            'Убедитесь, что все токены установлены в переменных окружения. '
         )
+        logging.critical(error_massage)
+        raise SystemExit(error_massage)
     logging.info('Все токены доступны')
 
 
