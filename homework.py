@@ -148,7 +148,7 @@ def main():
 
 if __name__ == '__main__':
     stream_handler = StreamHandler(sys.stdout)
-    file_handler = FileHandler('main.log')
+    file_handler = FileHandler('main.log', encoding='utf-8')
     formatter = logging.Formatter(
         '%(created)f, %(asctime)s, %(msecs)d, %(levelname)s,'
         '%(message)s, %(module)s, %(name)s'
